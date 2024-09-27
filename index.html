@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Face Recognition</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f4f4f4;
+        }
+        h1 {
+            margin-bottom: 20px;
+        }
+        video {
+            border: 2px solid #ccc;
+            border-radius: 8px;
+            max-width: 100%;
+            width: 600px;
+            height: auto;
+        }
+        #results {
+            margin-top: 20px;
+            font-size: 1.2em;
+        }
+    </style>
+    <script defer>
+        // Function to send the current video frame to the server for face recognition
+        async function processFrame() {
+            const video = document.querySelector('video');
+            const canvas = document.createElement('canvas');
+            const context = canvas.getContext('2d');
+
+            // Draw the current video frame on the canvas
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            context.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+            // Convert canvas to base64 image
+            const imageData = canvas.toDataURL('image/jpeg');
+            
+            // Send image to the server
+            const response = await fetch('/process_frame', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ image: imageData })
+            });
+            const result = await response.json();
+
+            // Display recognized names on the page
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = '';  // Clear previous results
+
+            if (result.error) {
+                resultsDiv.innerHTML = `<p>Error: ${result.error}</p>`;
+            } else {
+                result.forEach(name => {
+                    resultsDiv.innerHTML += `<p>${name}</p>`;
+                });
+            }
+        }
+
+        // Set an interval to process frames every second
+        setInterval(processFrame, 1000);
+    </script>
+</head>
+<body>
+    <h1>Face Recognition with WebRTC</h1>
+    <video autoplay playsinline></video>
+    <div id="results"></div>
+
+    <script>
+        // WebRTC code to access the user's webcam
+        navigator.mediaDevices.getUserMedia({ video: true })
+            .then(stream => {
+                const video = document.querySelector('video');
+                video.srcObject = stream;
+            })
+            .catch(error => {
+                console.error("Error accessing webcam:", error);
+            });
+    </script>
+</body>
+</html>
